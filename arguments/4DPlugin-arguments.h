@@ -14,7 +14,12 @@
 #include "4DPluginAPI.h"
 #include "4DPlugin-JSON.h"
 
+#if VERSIONMAC
 #import <Foundation/Foundation.h>
+#endif
+#if VERSIONWIN
+#include "Windows.h"
+#endif
 
 #pragma mark -
 

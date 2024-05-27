@@ -1,3 +1,5 @@
 arguments/test/userPreferences.*
 arguments/build/*
 arguments/arguments.xcodeproj/project.xcworkspace/*
+arguments/.vs/*
+arguments/Objs/*

@@ -61,7 +61,7 @@ void Get_command_line(PA_PluginParameters params) {
     LPWSTR lpCmdLine = GetCommandLineW();
     LPWSTR *szArglist = CommandLineToArgvW((LPCWSTR)lpCmdLine, &NumArgs);
     if(szArglist) {
-        for(unsigned int i = 0; i < nArgs; ++i){
+        for(unsigned int i = 0; i < NumArgs; ++i){
             PA_Unistring u = PA_CreateUnistring((PA_Unichar *)szArglist[i]);
             PA_Variable v = PA_CreateVariable(eVK_Unistring);
             PA_SetStringVariable(&v, &u);
