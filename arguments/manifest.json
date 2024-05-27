@@ -1,0 +1,11 @@
+{
+    "name": "arguments",
+    "id": 20000,
+    "commands": [
+        {
+            "theme": "arguments",
+            "syntax": "Get command line:C",
+            "threadSafe": true
+        }
+    ]
+}
