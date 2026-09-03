@@ -3,3 +3,5 @@ arguments/build/*
 arguments/arguments.xcodeproj/project.xcworkspace/*
 arguments/.vs/*
 arguments/Objs/*
+build/*
+test/Project/DerivedData/*
