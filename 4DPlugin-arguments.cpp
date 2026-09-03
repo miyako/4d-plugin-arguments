@@ -40,18 +40,20 @@ void Get_command_line(PA_PluginParameters params) {
     PA_CollectionRef returnValue = PA_CreateCollection();
     
 #if VERSIONMAC
-    NSArray<NSString *> *arguments =[[NSProcessInfo processInfo]arguments];
-    for(NSUInteger i = 0; i < [arguments count]; ++i) {
-        NSString *argument = [arguments objectAtIndex:i];
-        NSUInteger len = [argument length];
-        NSUInteger size = (len * sizeof(PA_Unichar)) + sizeof(PA_Unichar);
-        std::vector<uint8_t> buf(size);
-        if([argument getCString:(char *)&buf[0] maxLength:size encoding:NSUnicodeStringEncoding]){
-            PA_Unistring u = PA_CreateUnistring((PA_Unichar *)&buf[0]);
-            PA_Variable v = PA_CreateVariable(eVK_Unistring);
-            PA_SetStringVariable(&v, &u);
-            PA_SetCollectionElement(returnValue, PA_GetCollectionLength(returnValue), v);
-            PA_ClearVariable(&v);
+    @autoreleasepool {
+        NSArray<NSString *> *arguments =[[NSProcessInfo processInfo]arguments];
+        for(NSUInteger i = 0; i < [arguments count]; ++i) {
+            NSString *argument = [arguments objectAtIndex:i];
+            NSUInteger len = [argument length];
+            NSUInteger size = (len * sizeof(PA_Unichar)) + sizeof(PA_Unichar);
+            std::vector<uint8_t> buf(size);
+            if([argument getCString:(char *)&buf[0] maxLength:size encoding:NSUnicodeStringEncoding]){
+                PA_Unistring u = PA_CreateUnistring((PA_Unichar *)&buf[0]);
+                PA_Variable v = PA_CreateVariable(eVK_Unistring);
+                PA_SetStringVariable(&v, &u);
+                PA_SetCollectionElement(returnValue, PA_GetCollectionLength(returnValue), v);
+                PA_ClearVariable(&v);
+            }
         }
     }
 #endif
