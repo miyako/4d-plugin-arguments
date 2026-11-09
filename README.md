@@ -106,3 +106,101 @@ If ((Get command line).query("$1 = :1"; "--verbose").length>0)
 	// ...
 End if
 ```
+
+## Versioning and publication
+
+**Bump version** is manual and source-only. Select the intended branch in
+Actions (or `gh workflow run bump-version.yml --ref <branch> -f mode=patch`;
+`minor` and `major` are also supported). The workflow checks out immutable
+`github.sha`, requires a clean checkout and that exact remote branch tip,
+and commits a single direct-child metadata change. It pushes only the selected
+branch, without force or followed tags. The executable
+`.github/scripts/bump-hooks/pre-push` is mandatory both initially and immediately
+before pushing. It requires exactly one advertised update, the selected old SHA,
+the literal new HEAD SHA, the exact target ref and exactly one direct parent.
+Late advance, ancestor rewind, deletion and same-result races fail closed.
+A bump creates no tag, dispatch or build.
+
+**Build** is a separate manual workflow with zero inputs:
+`gh workflow run release.yml --ref <branch>`. Every checkout uses the selected
+immutable `github.sha`. Strict source `X.Y.Z` determines the new `vX.Y.Z` tag and
+`arguments-X.Y.Z.zip` / `arguments-X.Y.Z.dmg` assets. Publication remains available
+from the branch selector, with no default-branch-only restriction. There are no
+push/tag/PR triggers. One repository-wide cross-branch concurrency group
+serializes publication without canceling a running build.
+
+### Source authority and migration repair
+
+The original bump header introduced at `496ca2c` explicitly promises coordinated
+`MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` and plist short/build versions.
+This affirmative contract, not the buggy marketing-first implementation, is the
+authority. Followed source history includes the directory move at `2610972`;
+the actual copied plist is root `Info.plist`, with localized display strings in
+`English.lproj/InfoPlist.strings` referenced by the Xcode resource phase.
+At `b8e7959`, all six marketing settings and the source plist are `1.0.2`,
+but all six current settings and both localized version displays are `1.0.0`.
+This migration repairs only those stale source values to **existing `1.0.2`**;
+it does not increment a release.
+
+Future bumps validate and co-bump the six settings for each coordinated key,
+root plist literals and actual English short/info displays. Supported Xcode
+references remain references; absent `CFBundleVersion` stays absent. Duplicate
+quoted or unquoted keys fail validation. Other bytes, copyright text, BOM,
+CR-only/CRLF/mixed endings and file modes are preserved. Prebuilt bundles,
+ZIP/DMG files, dependencies, API headers, manifests, 4D data/schema and counters
+are excluded.
+
+### Native pipeline and limitations
+
+Build retains Windows x64 MSBuild with v143/Windows SDK 10.0, then universal
+macOS Xcode (`Default`, arm64 + x86_64), the existing `11.0` workflow deployment
+override, Cocoa, and the unchanged project/dependency/resource definitions.
+Windows uses the exact Release|x64 output under
+`test/plugins/arguments.bundle/contents/windows64/arguments.4DX`, rather than a
+recursive first match. Only that stale output is invalidated before MSBuild.
+macOS invalidates its binary, copied plist/localized display and signature,
+not the entire committed bundle or its resources. Verification requires a
+new binary with both architectures and built metadata matching selected source,
+including Xcode-compiled binary-plist localized strings. The Windows artifact
+is merged from its exact downloaded path. Signing and strict verification,
+ZIP/DMG packaging, both notarization submissions with explicit `Accepted`
+status, and DMG stapling all precede publication.
+
+The committed `a/libjsoncpp.a`, `lib/windows64/jsoncpp.lib`, resource copy phases
+and native toolchains remain unchanged. The Python suite uses stubs; it does not
+prove that committed libraries support both macOS slices, link the project,
+run 4D, or exercise Apple credentials/services. Native architecture/linking or
+signing failures remain hard gates, not bypasses.
+
+Secret names remain `APPLE_DEVELOPER_ID_CERTIFICATE`,
+`APPLE_DEVELOPER_ID_CERTIFICATE_PASSWORD`, `KEYCHAIN_PASSWORD`,
+`NOTARYTOOL_APPLE_ID`, `NOTARYTOOL_TEAM_ID` and `NOTARYTOOL_PASSWORD`.
+
+### Create-only publication and recovery
+
+Before native work and again after all build/sign/notary/staple gates, publication
+checks remote tags and the authenticated paginated releases list, including
+drafts. Every page and release entry is validated. Auth, 404, network, malformed
+data and later-page errors fail closed; only a complete successful no-match scan
+permits creation.
+
+Publication POSTs a new tag ref at the selected SHA and verifies that remote SHA.
+Even concurrent creation at the same SHA fails. It then separately POSTs a new
+public, non-prerelease release with explicit tag, selected target SHA, name and
+empty body (the original notes policy), then POSTs assets to the newly returned
+release ID. It never reuses, updates, deletes, clobbers, rolls back or retries.
+
+On failure after creation, **the tag, release and any uploaded assets remain**.
+Inspect the run's selected SHA, tag, release ID and GitHub remote state before
+manual recovery. Do not rerun expecting to fill in a partial release: availability
+checks reject retained state. A maintainer must investigate and decide how to
+recover; automation never deletes production state. For a subsequent normal
+publication, explicitly bump source on the intended branch and run Build on
+that resulting commit.
+
+Local regression commands (no native tools or publication):
+
+```sh
+actionlint
+python3 -B -m unittest discover -s .github/tests -v
+```
