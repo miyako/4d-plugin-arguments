@@ -198,9 +198,71 @@ recover; automation never deletes production state. For a subsequent normal
 publication, explicitly bump source on the intended branch and run Build on
 that resulting commit.
 
-Local regression commands (no native tools or publication):
+Local regression commands (no project builds or publication):
 
 ```sh
 actionlint
 python3 -B -m unittest discover -s .github/tests -v
 ```
+
+### Native ownership regression
+
+On macOS, the Python suite also compiles the actual plugin entry point, JSON
+helpers, every tracked `Classes/*.cpp` wrapper, and the **full unchanged bundled
+SDK** with ASan/UBSan. Only the SDK's engine callback is substituted. The test
+executable receives synthetic arguments only; it does not inspect another
+process's arguments. Compilation uses `clang++` directly into a temporary
+directory, never Xcode/MSBuild project phases or release tools.
+
+The argument and JSON string/picture temporaries start Undefined before shallow
+assignment, avoiding an overwritten owned empty allocation. Collection/property
+assignment preserves the input long enough for synchronous use; temporary
+variables are still cleared afterward. JSON scalar getters copy then clear
+successful owning results, including type mismatches. `ob_get_o` / `ob_get_c`
+return owning references: callers must eventually use `PA_DisposeObject` /
+`PA_DisposeCollection`. Failed property getters throw `std::runtime_error` with
+the SDK error code before reading or clearing their unspecified output.
+
+Run just these checks with:
+
+```sh
+python3 -B .github/tests/test_ownership.py -v
+```
+
+The same harness can compile immutable baseline source using
+`ARGUMENTS_OWNERSHIP_SOURCE_ROOT=/path/to/baseline`. At baseline
+`c830d69d64c1d7965fdf308e297f50981e0007e2`, allocated-empty arguments/setters leak,
+successful scalar/mismatched property results are not cleared, and failed getter
+outputs are inspected rather than reported. Both allocated and null empty
+representations, exact ASCII/BMP/supplementary/empty text, reference handoff
+survival, borrowed copies, independent array transfers, replacement, shrink,
+clear, and rejected transfers are covered. Explicit string/handle/reference/
+picture balances replace unavailable macOS leak-sanitizer support.
+
+Both command manifests expose only `Get command line:C`, dispatched by selector
+1; there is no text-array command. macOS compiles the entry, JSON helper and SDK;
+Windows compiles the entry and SDK (the JSON header is included). The four
+`Classes/*.cpp` wrappers are tracked but absent from both project compile lists;
+the regression compiles them anyway. No `CPicture` or `C_POINTER` wrapper is
+present. `C_TEXT` copies borrowed input and uses content setters; `ARRAY_TEXT`
+copies inputs and creates independent strings for accepted array transfers,
+without disposing transferred aliases. BLOB/integer wrappers have no native
+string-descriptor assignments.
+
+The bundled SDK C file has git blob
+`62f745e91d81ef2c3c901c656ea8e175d3b173e8`, introduced in repository history at
+`c25564a8faad8b5f2ff0b733f5397a91918bec21` and moved at `2610972`; the `v13`/`v14`
+header comments are not a verified upstream release identity. Its array setter
+disposes the old element and transfers the descriptor only for Unicode arrays
+with data, index `0..count`, and a non-null descriptor pointer. Rejections retain
+caller ownership; a null-buffer empty descriptor is still a valid input.
+`PA_SetStringVariable` is shallow, whereas `PA_ReturnString` forwards a UTF-16
+buffer to the engine's content setter. Successful property/collection-element
+results explicitly require cleanup in this SDK.
+
+The ownership workflow runs unsigned tests only. Existing manual build/bump
+workflows, prebuilt bundles, third-party libraries and SDK internals are
+unchanged. These checks do **not** certify Windows execution or an actual 4D
+host, SDK resize-allocation-failure count integrity, or ambiguous SDK-only
+application-path/picture-data output ownership. No first-party pointer-metadata
+cleanup, JSON Parse input, or asynchronous callback path exists here.
