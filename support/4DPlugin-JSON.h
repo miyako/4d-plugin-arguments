@@ -103,6 +103,8 @@ void ob_set_b(PA_ObjectRef obj, const wchar_t *_key, bool value);
 void ob_set_0(PA_ObjectRef obj, const wchar_t *_key);
 void ob_set_0(PA_ObjectRef obj, const char *_key);
 bool ob_is_defined(PA_ObjectRef obj, const wchar_t *_key);
+// Getters throw std::runtime_error on SDK property-get failure.
+// Scalar results are copied; successful reference results are owned by the caller.
 bool ob_get_a(PA_ObjectRef obj, const wchar_t *_key, CUTF8String *value);
 bool ob_get_b(PA_ObjectRef obj, const wchar_t *_key);
 double ob_get_n(PA_ObjectRef obj, const wchar_t *_key);

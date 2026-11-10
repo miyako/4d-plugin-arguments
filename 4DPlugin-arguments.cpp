@@ -49,7 +49,7 @@ void Get_command_line(PA_PluginParameters params) {
             std::vector<uint8_t> buf(size);
             if([argument getCString:(char *)&buf[0] maxLength:size encoding:NSUnicodeStringEncoding]){
                 PA_Unistring u = PA_CreateUnistring((PA_Unichar *)&buf[0]);
-                PA_Variable v = PA_CreateVariable(eVK_Unistring);
+                PA_Variable v = PA_CreateVariable(eVK_Undefined);
                 PA_SetStringVariable(&v, &u);
                 PA_SetCollectionElement(returnValue, PA_GetCollectionLength(returnValue), v);
                 PA_ClearVariable(&v);
@@ -65,7 +65,7 @@ void Get_command_line(PA_PluginParameters params) {
     if(szArglist) {
         for(unsigned int i = 0; i < NumArgs; ++i){
             PA_Unistring u = PA_CreateUnistring((PA_Unichar *)szArglist[i]);
-            PA_Variable v = PA_CreateVariable(eVK_Unistring);
+            PA_Variable v = PA_CreateVariable(eVK_Undefined);
             PA_SetStringVariable(&v, &u);
             PA_SetCollectionElement(returnValue, PA_GetCollectionLength(returnValue), v);
             PA_ClearVariable(&v);

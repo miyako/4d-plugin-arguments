@@ -1,0 +1,16 @@
+name: Ownership regression
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ownership:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run unsigned SDK-boundary and repository regressions
+        run: python3 -B -m unittest discover -s .github/tests -v
